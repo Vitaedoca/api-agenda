@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Tabela do prestador de serviço
+model ServiceProvider {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique @db.ObjectId
+  serviceType String
+  agendas     Agenda[] // Agendas associadas a este prestador de serviço
+}
+
+// Modelo para clientes, se necessário
+model Customer {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  user    User     @relation(fields: [userId], references: [id])
+  userId  String   @unique @db.ObjectId
+  agendas Agenda[] // Agendas associadas a este cliente
+}
+
+// Usuário
+model User {
+  id              String           @id @default(auto()) @map("_id") @db.ObjectId
+  username        String
+  email           String           @unique
+  password        String
+  userType        UserType // Campo para representar o tipo de usuário
+  agendas         Agenda[] // Agendas criadas pelo usuário
+  serviceProvider ServiceProvider? // Relacionamento com prestador de serviço, se for um
+  customer        Customer? // Relacionamento com cliente, se for um
+}
+
+// Agenda
+model Agenda {
+  id                String           @id @default(auto()) @map("_id") @db.ObjectId
+  title             String           @unique
+  description       String?
+  startDate         DateTime         @map("start_date") @db.Date
+  endDate           DateTime         @map("end_date") @db.Date
+  creator           User             @relation(fields: [creatorId], references: [id]) // Quem criou a agenda
+  creatorId         String           @db.ObjectId
+  serviceProvider   ServiceProvider? @relation(fields: [serviceProviderId], references: [id]) // Relacionamento com prestador de serviço
+  serviceProviderId String?          @db.ObjectId
+  customer          Customer?        @relation(fields: [customerId], references: [id]) // Relacionamento com cliente
+  customerId        String?          @db.ObjectId
+}
+
+enum UserType {
+  ADMIN
+  SERVICE_PROVIDER
+  CUSTOMER
+}
